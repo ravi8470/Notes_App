@@ -1,0 +1,6 @@
+The render method works when you have a templating engine, such as Handlebars or Jade, in use. It will only 
+diplay the webpage if it is ejs jade ,etc. It won't if its just html.
+
+
+The sendfile method, on the other hand, simply sends a given file to the client, regardless of the type and
+ contents of the file.

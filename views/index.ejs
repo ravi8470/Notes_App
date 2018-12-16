@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Login Form</title>
+</head>
+<body>
+        <%if (success == 333){ %> <font color="red">Please login to save a note</font><% } %>
+    <h2>Login:</h2>
+<form action="/login" method="post" >
+Enter your username:<input type="text" name="uname"   required>
+Enter Password:<input type="password" name="upass" required>
+<input type="submit" name="submit" value="submit">
+</form>
+<h2>Sign up:</h2>
+<%if (success == 111){ %> user entered successfully <% } %>
+<%if (success == 200){ %> user already exists <% } %>  
+    <form action="/adduser" method="POST">
+    Enter a unique username:<input type="text" name="uname" onkeyup= "checkIfUnique(this.value)" required>
+    Enter Password:<input type="password" name = "upass"  required>
+    <input type="submit" name="submit" id="btSubmit" value="Submit">
+    </form>
+    <script>
+        function checkIfUnique(username){
+            var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function(){
+                if(this.readyState == 4  && this.status == 200){
+                    console.log(this.response);
+                    var json = JSON.parse(this.response);
+                    if(json.text == "")
+                        json.text = "";
+                    document.getElementById("warningText").innerHTML = json.text;
+                    var bt = document.getElementById('btSubmit');
+                    if(json.status == 0)
+                        bt.disabled = true;
+                    else if(json.status == 1)
+                        bt.disabled = false;
+                }
+            }
+            xhttp.open("POST", "/checkUnique", true);
+            xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+            xhttp.send("uname=" + username);
+        }
+    </script>
+        <div id="warningText">Will I change?</div>
+</body>
+</html>

@@ -1,0 +1,24 @@
+<html>
+    <head>
+        <title>
+            Dashboard
+        </title>
+    </head>
+    <body>
+        Welcome <%= name %><div align = RIGHT><form action="/logout">
+            <input type = "submit" name = "logout" value="logout">
+        </form></div>
+        <h3>Add a Note:</h3> 
+        <form action="/saveNote" method="POST">
+            Note title: <input type = "text" name = "noteTitle" required>
+            Note Body: <input type = "text" name = "noteBody" required>
+            <input type = "submit" name = "submit" value="submit">
+        </form>
+        <% for (var i=0 ;i < len;i++) { %>
+            Note <%= i+1 %>: 
+            Title: <%= notes[i]['title'] %>
+            Text: <%= notes[i]['note_text'] %> 
+            <br/>   
+        <% } %>
+    </body>
+</html>

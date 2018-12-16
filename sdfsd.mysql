@@ -1,0 +1,2 @@
+CREATE TABLE notes(USER_ID int, title varchar(50), created DATETIME,
+ note_id int AUTO_INCREMENT NOT NULL, PRIMARY KEY(note_id), FOREIGN_KEY(USER_ID) REFERENCES logins(ID))
