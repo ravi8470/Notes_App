@@ -29,7 +29,8 @@ app.post("/adduser", (req, resp) => {
   conn.query(sql2, (err, res)=>{
     if(err) throw err;
     if(res[0]['COUNT(username)'] == 0){
-      var sql = "INSERT INTO logins(username, password) VALUES ('" + user + "','" + pass +"')";
+      let hash = bcrypt.hashSync(pass, 10);
+      var sql = "INSERT INTO logins(username, password) VALUES ('" + user + "','" + hash +"')";
       console.log(sql);
       conn.query(sql, function(err,res){
         if(err) throw err;
@@ -52,36 +53,30 @@ app.post("/login",(reqp, resp) => {
   else{
     var user = reqp.body.uname;
     var pass = reqp.body.upass;
-    var sql = "SELECT ID, username FROM logins WHERE username = '"+user + "' AND password = '"+ pass +"'";
+    let hash = bcrypt.hashSync(pass, 10);
+    console.log("hashed pass is: ", hash);
+    var sql = "SELECT ID, username, password FROM logins WHERE username = '"+user + "'";
     console.log(sql);
     conn.query(sql, function(err,res){
       if(err) throw err;
       numRec = res.length;
       console.log("Num of records found: ", res.length);
-      
       if(res.length == 1){
-        console.log("entered the if block");
-        reqp.session.ID = res[0]['ID'];
-        console.log("saving the ID session variable with value: ", reqp.session.ID);
-        reqp.session.username = res[0]['username'];
-        var sql3 = "SELECT * FROM notes WHERE ID = " + res[0]['ID'] +" ORDER BY created DESC LIMIT 3";
-        console.log(sql3);
-        conn.query(sql3, (err, resqq) =>{
-          console.log("Hello" ,resqq);
-          if(resqq == undefined){
-            reqp.session.notesLen = 0;
-            reqp.session.notes = []
-          }          
-          else{
-            reqp.session.notes = resqq;
-            reqp.session.notesLen = resqq.length
-          }
-          resp.render('dashboard',{name: reqp.session.username, notes: reqp.session.notes, len : reqp.session.notesLen});
-        })       
+        console.log("found a user.. matching pass next");
+        console.log("hash is :" + hash + "and pass is " + res[0]['password']);
+        if(bcrypt.compareSync(reqp.body.upass, res[0]['password'])){
+          console.log("password comparison succeeded");
+          reqp.session.ID = res[0]['ID'];
+          reqp.session.username = res[0]['username']
+          console.log("saving the ID session variable with value: ", reqp.session.ID);
+          selectRecentNotes(reqp, resp);
+        }
+        else{
+          resp.render('index', {success: 666});
+        }
       }
       else{
-        console.log("Entered the else block");
-        resp.render('gandalf');
+        resp.render('index',{success: 666})
       }
     })
   }  
@@ -94,6 +89,7 @@ app.get('/login', (req,res) => {
     res.render('index',{success: 0});
   }
 });
+
 //Saving Notes
 app.post("/saveNote",(reqp,resp) => {
   if(typeof reqp.session.ID != "undefined"){
@@ -103,26 +99,15 @@ app.post("/saveNote",(reqp,resp) => {
     console.log(sql);
     conn.query(sql, function(err, res){
       if(err) throw err;
-      var sql3 = "SELECT * FROM notes WHERE ID = " + reqp.session.ID +" ORDER BY created DESC LIMIT 3";
-      conn.query(sql3, (err, resqq) =>{
-        console.log("Hello" ,resqq);
-        if(resqq == undefined){
-          reqp.session.notesLen = 0;
-          reqp.session.notes = []
-        }          
-        else{
-          reqp.session.notes = resqq;
-          reqp.session.notesLen = resqq.length
-        }
-        resp.render('dashboard',{name: reqp.session.username, notes: reqp.session.notes, len : reqp.session.notesLen});
-      })
+      selectRecentNotes(reqp,resp);
     })
   }
   else{
     resp.render('index',{success: 333}) 
   }
 });
-//Checking for Unique username through AJAX Calls
+
+//Checking for Unique username through AJAX Call
 app.post("/checkUnique", (req, res) => {
   console.log(req.body.uname);
   var sql2 = "SELECT COUNT(username) from logins WHERE username = '"+ req.body.uname + "'";
@@ -142,6 +127,7 @@ app.post("/checkUnique", (req, res) => {
   })
   
 });
+
 app.get("/adduser", (req, res)=>{
   // res.sendFile(__dirname + "/views/adduser.html");
   res.render('adduser',{success: 0});
@@ -152,7 +138,77 @@ app.get("/logout", (req,res) => {
     if(err) throw err;
   });
   res.render('index',{success: 0});
-})
+});
+
+
+app.post("/fetchNotes", (req,res) => {
+  if(req.session.ID){
+    console.log("the offset received was ", req.body);
+    var sql = "SELECT COUNT(note_id) from notes WHERE ID = " + req.session.ID ;
+    conn.query(sql,(err, resp) => {
+      console.log(resp);
+      req.session.numNotes = resp[0]['COUNT(note_id)'];
+      console.log("num notes stored are ", req.session.numNotes);
+      if(req.session.numNotes % 4 == 0)
+        req.session.numPages = req.session.numNotes / 4;
+      else
+        req.session.numPages = Math.floor(req.session.numNotes / 4) + 1;
+      if(req.session.numNotes < 4)
+        req.session.numPages = 1;
+      console.log("Number of pages are ", req.session.numPages);
+      console.log("request body is", req.body);
+      var sql2 = "SELECT * from notes WHERE ID = " + req.session.ID + " LIMIT 4 OFFSET " + ((req.body.offset-1)*4);
+      console.log(sql2);
+      conn.query(sql2, (err, ress) => {
+        console.log(ress);
+        console.log("Num of things retrieved ", ress.length);
+        res.set('statusCode', '200');
+        res.set('Content-Type', 'application/json');
+        res.send({payload:ress,numPages: req.session.numPages});
+      })      
+    });
+  }
+  else{
+    res.render('index',{success: 0});
+  }
+});
+
+app.post("/updateNote", (reqp, resp) => {
+  console.log("Data received is :", reqp.body.note_id, reqp.body.noteTitle, reqp.body.noteBody);
+  var sql = "UPDATE notes SET title = '" + reqp.body.noteTitle + "' ,note_text = '" + reqp.body.noteBody +
+   "' ,created = NOW() WHERE note_id = " + reqp.body.note_id;
+  console.log(sql);
+  conn.query(sql, (err, res) => {
+    if(err) throw err;
+    console.log(res);
+    //Maybe async await here so that after the update call is finished that we start the retrieval process so the
+    // updated note also gets retrieved.
+    selectRecentNotes(reqp,resp);
+  })
+  
+});
+
+
+app.get("/deleteNote", (req,res) => {
+  console.log("Note id received for deleting is: ",req.query.note_id);
+  var sql = "DELETE FROM notes WHERE note_id= " + req.query.note_id;
+  conn.query(sql, (err, resp) => {
+    if(err) throw err;
+    console.log(resp);
+    res.set('statusCode', '200');
+    res.set('Content-Type', 'text/html');
+    if(resp.affectedRows == 1){
+      res.send("<font color='green'>Note was deleted</font>");
+    }
+    else{
+      res.send("<font color='red'>Error in deleting note.</font>");
+    }
+  })
+  
+});
+
+
+
 app.get("/", (req, res) => {
   console.log("entered the use/get"); 
   if(req.session.ID > -1 && req.session.username != ""){
@@ -162,14 +218,33 @@ app.get("/", (req, res) => {
     res.render('index',{success: 0});
   }
 });
-
-// app.get('*', function(req, res){
-//   res.status(404).send('404 Page Not Found.');
-// });
-
+app.use(function (req, res, next) {
+  res.status(404).send("<font color='red'>Sorry, This page is in another Castle!</font>")
+});
 app.listen(port, () => {
   console.log("Server listening at port: "+ port);
 });
-// app.use(function (req, res, next) {
-//   res.status(404).send("Sorry can't find that!")
+
+
+
+function selectRecentNotes(reqp, resp){  
+  console.log("function selectRecentNotes called");
+  var sql3 = "SELECT * FROM notes WHERE ID = " + reqp.session.ID +" ORDER BY created DESC LIMIT 3";
+  console.log(sql3);
+  conn.query(sql3, (errr, resqq) =>{
+    if(errr) throw errr;
+    console.log(resqq);
+    if(resqq == undefined){
+      reqp.session.notesLen = 0;
+      reqp.session.notes = []
+    }          
+    else{
+      reqp.session.notes = resqq;
+      reqp.session.notesLen = resqq.length
+    }
+    resp.render('dashboard',{name: reqp.session.username, notes: reqp.session.notes, len : reqp.session.notesLen});
+  })
+}
+// app.get('*', function(req, res){
+//   res.status(404).send('404 Page Not Found.');
 // });
