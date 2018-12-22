@@ -6,25 +6,26 @@
         </title>
     </head>
     <body>
-        Welcome <%= name %><div align = RIGHT><form action="/logout">
-            <input type = "submit" name = "logout" value="logout">
-        </form></div>
+        Welcome <%= name %>
+        <div align = "RIGHT">
+            <form action="/logout" method="GET">
+                <input type = "submit" name = "logout" value="logout">
+            </form>
+        </div>
+
+
         <h3>Add a Note:</h3> 
         <form action="/saveNote" method="POST">
             Note title: <input type = "text" name = "noteTitle" required>
             Note Body: <input type = "text" name = "noteBody" required>
             <input type = "submit" name = "submit" value="submit">
         </form>
-        <h4>Your Recent Notes:</h4>
-        <% for (var i=0 ;i < len;i++) { %>
-            Note <%= i+1 %>: 
-            Title: <%= notes[i]['title'] %>
-            Text: <%= notes[i]['note_text'] %> 
-            <br/>   
-        <% } %>
+    
         <input type="button" value="View all Notes" onclick = "fetchAllNotes(1)" >
+        
+        
         <script>
-            function fetchAllNotes(offsetx){
+        function fetchAllNotes(offsetx){
             console.log("func called");
             var xhttp = new XMLHttpRequest();
             console.log("obj created");
@@ -37,8 +38,22 @@
                     var x = "";
                     var j = 0;
                     var i = 1;
-                    if(offsetx > 3)
-                        i = offsetx - 2;
+                    if(offsetx > 3){
+                        if( offsetx + 2 <= json.numPages){
+                            i = offsetx - 2;
+                        }
+                        else if( offsetx + 1 == json.numPages){
+                            i = offsetx - 3;
+                        }
+                        else if(offsetx == json.numPages){
+                            i = offsetx - 4;
+                            if(i == 0){
+                                i = 1;
+                            }
+                        }
+                    }
+                       
+                    
                     for(; i <= json.numPages; i++){
                         //console.log(i);
                         var pp = "<input type='button' value='"+ i + "' onclick = fetchAllNotes("+ i + ")>";
@@ -53,7 +68,7 @@
                     var notesContent = "";
                     for(var i = 0;i < json.payload.length; i++){
                         var dd = "Title: " + json.payload[i].title + " Note: " + json.payload[i].note_text;
-                        notesContent = notesContent + dd + "    <input type = 'button' value='Edit' onclick=editNote("+
+                        notesContent = notesContent + dd + "<input type = 'button' value='Edit' onclick=editNote("+
                         json.payload[i].note_id + ",'"+ json.payload[i].title + "','" + json.payload[i].note_text + 
                         "')> <input type = 'button' value='Delete' onclick=deleteNote("+json.payload[i].note_id + ")>  <br>";
                     }
@@ -94,10 +109,85 @@
             xhttp.send();
             console.log("reached end");
         }
+        
+        function searchNotes(){
+            var searchT = document.getElementById('searchTerm').value;
+            console.log("the search term is :", searchT);
+            var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function(){
+                if(this.readyState == 4  && this.status == 200){
+                    var json = JSON.parse(this.response);
+                    console.log(json.searchResult);
+                    window.searchResult = json.searchResult;
+                    var content = "";
+                    window.numPages = Math.ceil(json.searchResult.length/4);
+                    for(var i = 0; i < json.searchResult.length && i < 4; i++){
+                        content += json.searchResult[i].title + " " + json.searchResult[i].note_text + 
+                        "<input type = 'button' value='Edit' onclick=editNote(" +
+                        json.searchResult[i].note_id + ",'"+ json.searchResult[i].title + "','" + json.searchResult[i].note_text + 
+                        "')> <input type = 'button' value='Delete' onclick=deleteNote("+json.searchResult[i].note_id + ")>  <br>";
+                    }
+                    var x ="";
+                    for(var i = 1, j = 0; i <= window.numPages && j < 5; i++, j++){
+                        var pp = "<input type='button' value='"+ i + "' onclick = shiftsearchRes("+ i + ")>";
+                        x = x + pp + " ";
+                    }
+                    document.getElementById('pageLinksForSearch').innerHTML = x;
+                    if(json.searchResult.length == 0){
+                        document.getElementById('searchRes').innerHTML = "<font color = 'RED'> No matches </font>"
+                    }
+                    else{
+                        document.getElementById('searchRes').innerHTML = content;
+                    }
+                    
+                }               
+            }
+            xhttp.open("GET", "/searchNotes?searchTerm="+searchT, true );
+            xhttp.send();
+        }
+        
+        function shiftsearchRes(pageNum){
+            console.log("shiftsearchres called");
+            console.log("numpage:", window.numPages);
+            var pageShiftBegn = 1;
+            if(pageNum > 3) {
+                if(pageNum + 2 <= window.numPages){
+                    pageShiftBegn = pageNum - 2 ;
+                }
+                else if( pageNum + 1 == window.numPages) {
+                    pageShiftBegn = pageNum - 3 ;
+                }
+                else if( pageNum  == window.numPages ){
+                    pageShiftBegn = pageNum - 4;
+                    if(pageShiftBegn == 0)
+                        pageShiftBegn = 1;
+                }
+            }
+            var x = "";
+            for(var i = pageShiftBegn, j = 0; i <= window.numPages && j < 5; i++,j++){
+                var pp = "<input type='button' value='"+ i + "' onclick = shiftsearchRes("+ i + ")>";
+                x = x + pp + " ";
+            }
+            document.getElementById('pageLinksForSearch').innerHTML = x;
+            x = "";
+            var content = "";
+            for( i = (pageNum-1) * 4, j = 0 ; j < 4 && i < window.searchResult.length; i++, j++){
+                content += window.searchResult[i].title + " " + window.searchResult[i].note_text + 
+                "<input type = 'button' value='Edit' onclick=editNote(" +
+                window.searchResult[i].note_id + ",'"+ window.searchResult[i].title + "','" + window.searchResult[i].note_text + 
+                "')> <input type = 'button' value='Delete' onclick=deleteNote("+window.searchResult[i].note_id + ")>  <br>";
+            }
+            document.getElementById('searchRes').innerHTML = content;
+        }
         </script>
         <div id="deleteResult"></div>
         <div id="notesArea"></div>
         <div id="pageNumLinks"></div>
         <div id="noteEditor"></div>
+        <h4>Search your Notes:</h4>
+        <input type="text" name="searchTerm" id="searchTerm">
+        <input type="button" value="Go" onclick="searchNotes()">
+        <div id="searchRes"></div>
+        <div id="pageLinksForSearch"></div>
     </body>
 </html>

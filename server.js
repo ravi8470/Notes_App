@@ -48,13 +48,13 @@ app.post("/adduser", (req, resp) => {
 var numRec;
 app.post("/login",(reqp, resp) => {
   if(reqp.session.ID && reqp.session.username){
-    resp.render('dashboard',{name: reqp.session.username, notes: reqp.session.notes, len : reqp.session.notesLen})
+    resp.render('dashboard',{name: reqp.session.username})
   }
   else{
     var user = reqp.body.uname;
     var pass = reqp.body.upass;
     let hash = bcrypt.hashSync(pass, 10);
-    console.log("hashed pass is: ", hash);
+    //console.log("hashed pass is: ", hash);
     var sql = "SELECT ID, username, password FROM logins WHERE username = '"+user + "'";
     console.log(sql);
     conn.query(sql, function(err,res){
@@ -62,14 +62,15 @@ app.post("/login",(reqp, resp) => {
       numRec = res.length;
       console.log("Num of records found: ", res.length);
       if(res.length == 1){
-        console.log("found a user.. matching pass next");
-        console.log("hash is :" + hash + "and pass is " + res[0]['password']);
+        //console.log("found a user.. matching pass next");
+        //console.log("hash is :" + hash + "and pass is " + res[0]['password']);
         if(bcrypt.compareSync(reqp.body.upass, res[0]['password'])){
-          console.log("password comparison succeeded");
+          //console.log("password comparison succeeded");
           reqp.session.ID = res[0]['ID'];
           reqp.session.username = res[0]['username']
           console.log("saving the ID session variable with value: ", reqp.session.ID);
-          selectRecentNotes(reqp, resp);
+          //selectRecentNotes(reqp, resp);
+          resp.render('dashboard',{name: reqp.session.username});
         }
         else{
           resp.render('index', {success: 666});
@@ -83,7 +84,7 @@ app.post("/login",(reqp, resp) => {
 });
 app.get('/login', (req,res) => {
   if(req.session.ID && req.session.username){
-    res.render('dashboard',{name: req.session.username, notes: req.session.notes, len : req.session.notesLen});
+    res.render('dashboard',{name: req.session.username});
   }
   else{
     res.render('index',{success: 0});
@@ -99,7 +100,8 @@ app.post("/saveNote",(reqp,resp) => {
     console.log(sql);
     conn.query(sql, function(err, res){
       if(err) throw err;
-      selectRecentNotes(reqp,resp);
+      // selectRecentNotes(reqp,resp);
+      resp.render('dashboard',{name: reqp.session.username});
     })
   }
   else{
@@ -149,12 +151,7 @@ app.post("/fetchNotes", (req,res) => {
       console.log(resp);
       req.session.numNotes = resp[0]['COUNT(note_id)'];
       console.log("num notes stored are ", req.session.numNotes);
-      if(req.session.numNotes % 4 == 0)
-        req.session.numPages = req.session.numNotes / 4;
-      else
-        req.session.numPages = Math.floor(req.session.numNotes / 4) + 1;
-      if(req.session.numNotes < 4)
-        req.session.numPages = 1;
+      req.session.numPages = Math.ceil(req.session.numNotes / 4);
       console.log("Number of pages are ", req.session.numPages);
       console.log("request body is", req.body);
       var sql2 = "SELECT * from notes WHERE ID = " + req.session.ID + " LIMIT 4 OFFSET " + ((req.body.offset-1)*4);
@@ -183,7 +180,14 @@ app.post("/updateNote", (reqp, resp) => {
     console.log(res);
     //Maybe async await here so that after the update call is finished that we start the retrieval process so the
     // updated note also gets retrieved.
-    selectRecentNotes(reqp,resp);
+    // selectRecentNotes(reqp,resp);
+    if(res.changedRows == 1 || res.affectedRows == 1){
+      resp.render('dashboard',{name: reqp.session.username, noteEdited: 55});
+    }
+    else{
+      resp.render('dashboard',{name: reqp.session.username, noteEdited: 66});
+    }
+    
   })
   
 });
@@ -207,12 +211,26 @@ app.get("/deleteNote", (req,res) => {
   
 });
 
-
+app.get("/searchNotes", (req,resp) => {
+  console.log(req.session.ID,req.session.username);
+  if(req.session.ID && req.session.username){
+    console.log("Value received to search is: ",req.query.searchTerm);
+    var sql = "SELECT * FROM notes WHERE title OR note_text LIKE '%" + req.query.searchTerm + "%'";
+    console.log(sql);
+    conn.query(sql, (err, res) =>{
+      if(err) throw err;
+      console.log(res);
+      resp.set('statusCode', '200');
+      resp.set('Content-Type', 'application/json');
+      resp.send({searchResult: res});
+    })
+  }
+});
 
 app.get("/", (req, res) => {
   console.log("entered the use/get"); 
   if(req.session.ID > -1 && req.session.username != ""){
-    res.render('dashboard',{name: req.session.username, notes: req.session.notes, len : req.session.notesLen})
+    res.render('dashboard',{name: req.session.username})
   }
   else{
     res.render('index',{success: 0});
@@ -242,7 +260,7 @@ function selectRecentNotes(reqp, resp){
       reqp.session.notes = resqq;
       reqp.session.notesLen = resqq.length
     }
-    resp.render('dashboard',{name: reqp.session.username, notes: reqp.session.notes, len : reqp.session.notesLen});
+    resp.render('dashboard',{name: reqp.session.username});
   })
 }
 // app.get('*', function(req, res){
