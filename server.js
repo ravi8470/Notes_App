@@ -215,7 +215,7 @@ app.get("/searchNotes", (req,resp) => {
   console.log(req.session.ID,req.session.username);
   if(req.session.ID && req.session.username){
     console.log("Value received to search is: ",req.query.searchTerm);
-    var sql = "SELECT * FROM notes WHERE title OR note_text LIKE '%" + req.query.searchTerm + "%'";
+    var sql = "SELECT * FROM notes WHERE title LIKE '%" + req.query.searchTerm + "%' OR note_text LIKE '%" + req.query.searchTerm + "%'";
     console.log(sql);
     conn.query(sql, (err, res) =>{
       if(err) throw err;
