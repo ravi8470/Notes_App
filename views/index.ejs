@@ -1,49 +1,192 @@
 <!DOCTYPE html>
 <html>
-<head>
-<title>Login Form</title>
-</head>
-<body>
-    <h2 align="center">Notes App</h2>
-    <%if (success == 333){ %> <font color="red">Please login to save a note</font><% } %>
-    <%if (success == 666){ %> <font color="red">Invalid Username/Password</font><% } %>
-    <h2>Login:</h2>
-    <form action="/login" method="post" >
-        Username:<input type="text" name="uname" required><br/><br/>
-        Password:<input type="password" name="upass" required><br/>
-        <input type="submit" name="submit" value="submit">
-    </form>
-    <h2>Sign up:</h2>
-    <%if (success == 111){ %> user entered successfully <% } %>
-    <%if (success == 200){ %> user already exists <% } %>  
-    <form action="/adduser" method="POST">
-        Username:<input type="text" name="uname" onkeyup= "checkIfUnique(this.value)" required><br/><br>
-        Password:<input type="password" name = "upass"  required> <br>
-        <input type="submit" name="submit" id="btSubmit" value="Submit">
-    </form>
+  <head>
+    <title>Login Form</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="https://unpkg.com/bulma@0.7.4/css/bulma.min.css" />
+    <style>
+      html,
+      body {
+        font-family: "Open Sans", serif;
+        font-size: 14px;
+        font-weight: 300;
+        height: 100vh;
+      }
+      .height-100 {
+        height: 100%;
+      }
+      .hero.is-success {
+        background: #f2f6fa;
+      }
+      .hero .nav,
+      .hero.is-success .nav {
+        -webkit-box-shadow: none;
+        box-shadow: none;
+      }
+      .box {
+        margin-top: 5rem;
+      }
+      .avatar {
+        margin-top: -70px;
+        padding-bottom: 20px;
+      }
+      .avatar img {
+        padding: 5px;
+        background: #fff;
+        border-radius: 50%;
+        -webkit-box-shadow: 0 2px 3px rgba(10, 10, 10, 0.1),
+          0 0 0 1px rgba(10, 10, 10, 0.1);
+        box-shadow: 0 2px 3px rgba(10, 10, 10, 0.1),
+          0 0 0 1px rgba(10, 10, 10, 0.1);
+      }
+      input {
+        font-weight: 300;
+      }
+      p {
+        font-weight: 700;
+      }
+      p.subtitle {
+        padding-top: 1rem;
+      }
+      .is-vertical-center {
+        display: flex;
+        align-items: center;
+      }
+    </style>
+  </head>
+  <body>
+    <section class="height-100 section">
+      <h1 class="title has-text-centered">Notes App</h1>
+      <div class="height-100 columns is-vcentered">
+        <%if (success == 333){ %>
+        <font color="red">Please login to save a note</font><% } %> <%if
+        (success == 666){ %>
+        <font color="red">Invalid Username/Password</font><% } %>
+        <section class=" is-4 is-offset-2 is-success is-fullheight column">
+          <div class="">
+            <div class="has-text-centered">
+              <div class="column">
+                <h3 class="title has-text-grey">Login</h3>
+                <div class="box">
+                  <figure class="avatar">
+                    <img src="https://img.icons8.com/color/2x/user.png" />
+                  </figure>
+                  <form action="/login" method="post">
+                    <div class="field">
+                      <div class="control">
+                        <input
+                          class="input is-large"
+                          type="text"
+                          name="uname"
+                          placeholder="Your Username"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div class="field">
+                      <div class="control">
+                        <input
+                          class="input is-large"
+                          type="password"
+                          placeholder="Your Password"
+                          name="upass"
+                          required
+                        />
+                      </div>
+                    </div>
+                    <button
+                      class="button is-block is-info is-large is-fullwidth"
+                      type="submit"
+                      name="submit"
+                    >
+                      Login
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <%if (success == 111){ %>
+        <h2>User registered Successfully.</h2>
+        <% } %> <%if (success == 200){ %> user already exists <% } %>
+        <section class="is-4 is-success is-fullheight column is-vcentered">
+          <div class="">
+            <div class="has-text-centered">
+              <div class="column">
+                <h3 class="title has-text-grey">Sign Up</h3>
+                <div class="box">
+                  <figure class="avatar">
+                    <img
+                      src="https://img.icons8.com/ios/2x/contacts-filled.png"
+                    />
+                  </figure>
+                  <form action="/adduser" method="POST">
+                    <div class="field">
+                      <div class="control">
+                        <input
+                          class="input is-large"
+                          type="text"
+                          name="uname"
+                          placeholder="Your Username"
+                          onkeyup="checkIfUnique(this.value)"
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div id="warningText"></div>
+                    <div class="field">
+                      <div class="control">
+                        <input
+                          class="input is-large"
+                          type="password"
+                          placeholder="Your Password"
+                          name="upass"
+                          required
+                        />
+                      </div>
+                    </div>
+                    <button
+                      class="button is-block is-info is-large is-fullwidth"
+                      type="submit"
+                      id="btSubmit"
+                      value="Submit"
+                      name="submit"
+                    >
+                      Sign Up
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </section>
     <script>
-        function checkIfUnique(username){
-            var xhttp = new XMLHttpRequest();
-            xhttp.onreadystatechange = function(){
-                if(this.readyState == 4  && this.status == 200){
-                    console.log("resp for ajax call is ", this.response);
-                    var json = JSON.parse(this.response);
-                    console.log("json is ", json);
-                    if(json.text == "")
-                        json.text = "";
-                    document.getElementById("warningText").innerHTML = json.text;
-                    var bt = document.getElementById('btSubmit');
-                    if(json.status == 0)
-                        bt.disabled = true;
-                    else if(json.status == 1)
-                        bt.disabled = false;
-                }
-            }
-            xhttp.open("POST", "/checkUnique", true);
-            xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-            xhttp.send("uname=" + username);
-        }
+      function checkIfUnique(username) {
+        var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+          if (this.readyState == 4 && this.status == 200) {
+            console.log("resp for ajax call is ", this.response);
+            var json = JSON.parse(this.response);
+            console.log("json is ", json);
+            if (json.text == "") json.text = "";
+            document.getElementById("warningText").innerHTML = json.text;
+            var bt = document.getElementById("btSubmit");
+            if (json.status == 0) bt.disabled = true;
+            else if (json.status == 1) bt.disabled = false;
+          }
+        };
+        xhttp.open("POST", "/checkUnique", true);
+        xhttp.setRequestHeader(
+          "Content-type",
+          "application/x-www-form-urlencoded"
+        );
+        xhttp.send("uname=" + username);
+      }
     </script>
-    <div id="warningText"></div>
-</body>
+  </body>
 </html>

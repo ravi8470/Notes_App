@@ -1,191 +1,260 @@
 <html>
-    <head>
-        
-        <title>
-            Dashboard
-        </title>
-    </head>
-    <body>
-        Welcome <%= name %>
-        <div align = "RIGHT">
-            <form action="/logout" method="GET">
-                <input type = "submit" name = "logout" value="logout">
-            </form>
-        </div>
-        <h3>Add a Note:</h3> 
-        <form action="/saveNote" method="POST">
-            Note title: <input type = "text" name = "noteTitle" required>
-            Note Body: <input type = "text" name = "noteBody" style="height:100px; width:200px" required> <br>
-            <input type = "submit" name = "submit" value="submit">
-        </form>
-    
-        <input type="button" value="View all Notes" onclick = "fetchAllNotes(1)" >
-        
-        
-        <script>
-        function fetchAllNotes(offsetx){
-            console.log("func called");
-            var xhttp = new XMLHttpRequest();
-            console.log("obj created");
-            xhttp.onreadystatechange = function(){
-                if(this.readyState == 4  && this.status == 200){
-                    console.log("response received", this.responseText);
-                    var json = JSON.parse(this.response);
-                    console.log("json received is ", json); 
-                    console.log("Pages received: ",json.numPages);
-                    var x = "";
-                    var j = 0;
-                    var i = 1;
-                    if(offsetx > 3){
-                        if( offsetx + 2 <= json.numPages){
-                            i = offsetx - 2;
-                        }
-                        else if( offsetx + 1 == json.numPages){
-                            i = offsetx - 3;
-                        }
-                        else if(offsetx == json.numPages){
-                            i = offsetx - 4;
-                            if(i == 0){
-                                i = 1;
-                            }
-                        }
-                    }
-                       
-                    
-                    for(; i <= json.numPages; i++){
-                        //console.log(i);
-                        var pp = "<input type='button' value='"+ i + "' onclick = fetchAllNotes("+ i + ")>";
-                        //console.log(pp);
-                        x = x + pp + " ";
-                        j++
-                        if(j == 5)
-                            break;
-                    }
-                    document.getElementById('pageNumLinks').innerHTML = x;
-                    
-                    var notesContent = "";
-                    for(var i = 0;i < json.payload.length; i++){
-                        var dd = "Title: " + json.payload[i].title + " Note: " + json.payload[i].note_text;
-                        notesContent = notesContent + dd + "<input type = 'button' value='Edit' onclick=editNote("+
-                        json.payload[i].note_id + ",'"+ json.payload[i].title + "','" + json.payload[i].note_text + 
-                        "')> <input type = 'button' value='Delete' onclick=deleteNote("+json.payload[i].note_id + ")>  <br>";
-                    }
-                    document.getElementById('notesArea').innerHTML = notesContent;
-                }
-            }
-            xhttp.open("POST", "/fetchNotes", true);
-            xhttp.setRequestHeader("Content-type", "application/json");
-            xhttp.send(JSON.stringify({offset: offsetx})); 
-        }
 
-        function editNote(note_id, title, text){
-            console.log("edit note called");
-            var content = "<h3> Edit the Note: </h3>";
-            content += "<form action='/updateNote' method='POST'>"
-            content += "<input type = 'hidden' name = 'note_id' value = " + note_id + "><br>";
-            content += "Title: <input type = 'text' value='" + title + "' name = 'noteTitle'><br>" ;
-            content += "Text: <input type = 'text' value='" + text + "' name = 'noteBody'><br>";
-            content += "<input type = 'submit' value='Apply'>"
-            content += "</form>";
-            console.log(content);
-            document.getElementById('noteEditor').innerHTML = content;
-        }
+<head>
+  <title>Dashboard</title>
+  <link rel="stylesheet" href="https://unpkg.com/bulma@0.7.4/css/bulma.min.css" />
+  <link rel="stylesheet" href="https://bulma.io/css/bulma-docs.min.css?v=201903212019">
+</head>
 
-        function deleteNote(id){
-            console.log("deeleteNote called with id =", id);
-            var xhttp = new XMLHttpRequest();
-            xhttp.onreadystatechange = function(){
-                if(this.readyState == 4  && this.status == 200){
-                    //console.log("resp for ajax call is ", this.response);
-                    document.getElementById("deleteResult").innerHTML = this.responseText;
-                    fetchAllNotes(1);
-                }
+<body style="background-color: gainsboro">
+  <div class="container">
+    <div class="columns is-vcentered">
+      <div class="column  ">
+        <p class="bd-notification is-primary">Welcome <%= name %></p>
+      </div>
+    </div>
+  </div>
+
+  <form action="/logout" method="GET">
+    <div class="control is-offset-11">
+      <button class="button is-primary is-pulled-right" type="submit" name="logout">Logout</button>
+    </div>
+  </form>
+  <br>
+  <hr>
+  <%if (success == 288){ %>
+  <div class="notification is-success is-4 column">
+    <button class="delete"></button>
+    Note successfully saved.
+  </div><% } %>
+  <%if (success == 299){ %>
+  <div class="notification is-danger is-4 column">
+    <button class="delete"></button>
+    Error in saving Note.
+  </div><% } %>
+  <label class="label is-medium">Add note:</label>
+  <form action="/saveNote" method="POST">
+    <div class="field">
+      <div class="control is-4 column">
+        <input class="input is-rounded" type="text" name="noteTitle" required placeholder="Note Title" />
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="control  is-4 column">
+        <textarea class="textarea" name="noteBody" minlength="10" required placeholder="Note Body"></textarea>
+      </div>
+    </div>
+
+    <div class="control is-4 column">
+      <button class="button is-primary" type="submit" name="submit">Save Note</button>
+    </div>
+  </form>
+
+  <hr>
+
+  <button class=" button is-primary" onclick="fetchAllNotes(1)">View All Notes </button>
+  <div id="notesArea"></div>
+  <div id="pageNumLinks"></div>
+  <hr>
+  <script>
+    //an implementation example, which sets click handler for delete elements of all notifications on the page, in Vanilla Javascript. 
+    document.addEventListener('DOMContentLoaded', () => {
+      (document.querySelectorAll('.notification .delete') || []).forEach(($delete) => {
+        $notification = $delete.parentNode;
+        $delete.addEventListener('click', () => {
+          $notification.parentNode.removeChild($notification);
+        });
+      });
+    });
+    function fetchAllNotes(offsetx) {
+      console.log("func called");
+      var xhttp = new XMLHttpRequest();
+      console.log("obj created");
+      xhttp.onreadystatechange = function () {
+        if (this.readyState == 4 && this.status == 200) {
+          console.log("response received", this.responseText);
+          var json = JSON.parse(this.response);
+          console.log("json received is ", json);
+          console.log("Pages received: ", json.numPages);
+          var x = "";
+          var j = 0;
+          var i = 1;
+          if (offsetx > 3) {
+            if (offsetx + 2 <= json.numPages) {
+              i = offsetx - 2;
+            } else if (offsetx + 1 == json.numPages) {
+              i = offsetx - 3;
+            } else if (offsetx == json.numPages) {
+              i = offsetx - 4;
+              if (i == 0) {
+                i = 1;
+              }
             }
-            xhttp.open("GET", "/deleteNote?note_id="+id, false);
-            //xhttp.setRequestHeader("Content-type","application/json");
-            //xhttp.send(JSON.stringify({note_id:id}));
-            xhttp.send();
-            console.log("reached end");
+          }
+
+          for (; i <= json.numPages; i++) {
+            //console.log(i);
+            var pp = "<input type='button' class='button is-primary' value='" + i + "' onclick = fetchAllNotes(" + i +")>";
+            //console.log(pp);
+            x = x + pp + " ";
+            j++;
+            if (j == 5) break;
+          }
+          document.getElementById("pageNumLinks").innerHTML = x;
+
+          var notesContent = "";
+          if(json.payload.length > 0){
+            notesContent += "<table class='table'><thead><tr><th>Title</th><th>Text</th><th>Edit</th><th>Delete</th>\
+              </tr></thead><tbody>";
+            for (var i = 0; i < json.payload.length; i++) {
+            notesContent += "<tr>";
+            notesContent += "<td>"+json.payload[i].title +"</td>"+ "<td>"+ json.payload[i].note_text + "</td>";
+            notesContent += "<td>" +"<button class='button is-link' onclick=editNote(" + json.payload[i].note_id +
+              ",'" + json.payload[i].title + "','" + json.payload[i].note_text +
+              "')>Edit</button></td><td><button class='button is-danger' onclick=deleteNote(" +
+              json.payload[i].note_id + ")>Delete</button></td>";
+            notesContent += "</tr>";
+            }
+            notesContent += "</tbody></table>"
+            document.getElementById("notesArea").innerHTML = notesContent;
+          }
+          
         }
-        
-        function searchNotes(){
-            var searchT = document.getElementById('searchTerm').value;
-            console.log("the search term is :", searchT);
-            var xhttp = new XMLHttpRequest();
-            xhttp.onreadystatechange = function(){
-                if(this.readyState == 4  && this.status == 200){
-                    var json = JSON.parse(this.response);
-                    console.log(json.searchResult);
-                    window.searchResult = json.searchResult;
-                    var content = "";
-                    window.numPages = Math.ceil(json.searchResult.length/4);
-                    for(var i = 0; i < json.searchResult.length && i < 4; i++){
-                        content += json.searchResult[i].title + " " + json.searchResult[i].note_text + 
-                        "<input type = 'button' value='Edit' onclick=editNote(" +
-                        json.searchResult[i].note_id + ",'"+ json.searchResult[i].title + "','" + json.searchResult[i].note_text + 
-                        "')> <input type = 'button' value='Delete' onclick=deleteNote("+json.searchResult[i].note_id + ")>  <br>";
-                    }
-                    var x ="";
-                    for(var i = 1, j = 0; i <= window.numPages && j < 5; i++, j++){
-                        var pp = "<input type='button' value='"+ i + "' onclick = shiftsearchRes("+ i + ")>";
-                        x = x + pp + " ";
-                    }
-                    document.getElementById('pageLinksForSearch').innerHTML = x;
-                    if(json.searchResult.length == 0){
-                        document.getElementById('searchRes').innerHTML = "<font color = 'RED'> No matches </font>"
-                    }
-                    else{
-                        document.getElementById('searchRes').innerHTML = content;
-                    }
-                    
-                }               
-            }
-            xhttp.open("GET", "/searchNotes?searchTerm="+searchT, true );
-            xhttp.send();
+      };
+      xhttp.open("POST", "/fetchNotes", true);
+      xhttp.setRequestHeader("Content-type", "application/json");
+      xhttp.send(JSON.stringify({ offset: offsetx }));
+    }
+
+    function editNote(note_id, title, text) {
+      console.log("edit note called");
+      var content = "<h3> Edit the Note: </h3>";
+      content += "<form action='/updateNote' method='POST'>";
+      content +=
+        "<input type = 'hidden' name = 'note_id' value = " +
+        note_id +
+        "><br>";
+      content +=
+        "Title: <input type = 'text' value='" +
+        title +
+        "' name = 'noteTitle'><br>";
+      content +=
+        "Text: <input type = 'text' value='" +
+        text +
+        "' name = 'noteBody'><br>";
+      content += "<input type = 'submit' value='Apply'>";
+      content += "</form>";
+      console.log(content);
+      document.getElementById("noteEditor").innerHTML = content;
+    }
+
+    function deleteNote(id) {
+      console.log("deeleteNote called with id =", id);
+      var xhttp = new XMLHttpRequest();
+      xhttp.onreadystatechange = function () {
+        if (this.readyState == 4 && this.status == 200) {
+          //console.log("resp for ajax call is ", this.response);
+          document.getElementById(
+            "deleteResult"
+          ).innerHTML = this.responseText;
+          fetchAllNotes(1);
         }
-        
-        function shiftsearchRes(pageNum){
-            console.log("shiftsearchres called");
-            console.log("numpage:", window.numPages);
-            var pageShiftBegn = 1;
-            if(pageNum > 3) {
-                if(pageNum + 2 <= window.numPages){
-                    pageShiftBegn = pageNum - 2 ;
-                }
-                else if( pageNum + 1 == window.numPages) {
-                    pageShiftBegn = pageNum - 3 ;
-                }
-                else if( pageNum  == window.numPages ){
-                    pageShiftBegn = pageNum - 4;
-                    if(pageShiftBegn == 0)
-                        pageShiftBegn = 1;
-                }
-            }
-            var x = "";
-            for(var i = pageShiftBegn, j = 0; i <= window.numPages && j < 5; i++,j++){
-                var pp = "<input type='button' value='"+ i + "' onclick = shiftsearchRes("+ i + ")>";
-                x = x + pp + " ";
-            }
-            document.getElementById('pageLinksForSearch').innerHTML = x;
-            x = "";
-            var content = "";
-            for( i = (pageNum-1) * 4, j = 0 ; j < 4 && i < window.searchResult.length; i++, j++){
-                content += window.searchResult[i].title + " " + window.searchResult[i].note_text + 
-                "<input type = 'button' value='Edit' onclick=editNote(" +
-                window.searchResult[i].note_id + ",'"+ window.searchResult[i].title + "','" + window.searchResult[i].note_text + 
-                "')> <input type = 'button' value='Delete' onclick=deleteNote("+window.searchResult[i].note_id + ")>  <br>";
-            }
-            document.getElementById('searchRes').innerHTML = content;
+      };
+      xhttp.open("GET", "/deleteNote?note_id=" + id, false);
+      //xhttp.setRequestHeader("Content-type","application/json");
+      //xhttp.send(JSON.stringify({note_id:id}));
+      xhttp.send();
+      console.log("reached end");
+    }
+
+    function searchNotes() {
+      var searchT = document.getElementById("searchTerm").value;
+      console.log("the search term is :", searchT);
+      var xhttp = new XMLHttpRequest();
+      xhttp.onreadystatechange = function () {
+        if (this.readyState == 4 && this.status == 200) {
+          var json = JSON.parse(this.response);
+          console.log(json.searchResult);
+          window.searchResult = json.searchResult;
+          var content = "";
+          window.numPages = Math.ceil(json.searchResult.length / 4);
+          content += "<table class='table'><thead><tr><th>Title</th><th>Text</th><th>Edit</th><th>Delete</th>\
+              </tr></thead><tbody>";
+          for (var i = 0; i < json.searchResult.length && i < 4; i++) {
+            content += "<tr>";
+            content += "<td>"+json.searchResult[i].title+"</td>" +"<td>"+json.searchResult[i].note_text +"</td>"+
+            "<td>"+"<button class= 'button is-primary' onclick=editNote(" +json.searchResult[i].note_id +
+              ",'" +json.searchResult[i].title +"','" +json.searchResult[i].note_text +
+              "')>Edit</button></td> <td><button class= 'button is-danger' onclick=deleteNote(" +
+              json.searchResult[i].note_id +")>Delete</button></td>";
+            content += "</tr>";
+          }
+          content += "</tbody></table>";
+          var x = "";
+          for (var i = 1, j = 0; i <= window.numPages && j < 5; i++ , j++) {
+            var pp = "<input type='button' class='button is-primary' value='" +i+"'onclick = shiftsearchRes(" +i + ")>";
+            x = x + pp + " ";
+          }
+          document.getElementById("pageLinksForSearch").innerHTML = x;
+          if (json.searchResult.length == 0) {
+            document.getElementById("searchRes").innerHTML =
+              "<font color = 'RED'> No matches </font>";
+          } else {
+            document.getElementById("searchRes").innerHTML = content;
+          }
         }
-        </script>
-        <div id="deleteResult"></div>
-        <div id="notesArea"></div>
-        <div id="pageNumLinks"></div>
-        <div id="noteEditor"></div>
-        <h4>Search your Notes:</h4>
-        <input type="text" name="searchTerm" id="searchTerm">
-        <input type="button" value="Go" onclick="searchNotes()">
-        <div id="searchRes"></div>
-        <div id="pageLinksForSearch"></div>
-    </body>
+      };
+      xhttp.open("GET", "/searchNotes?searchTerm=" + searchT, true);
+      xhttp.send();
+    }
+
+    function shiftsearchRes(pageNum) {
+      console.log("shiftsearchres called");
+      console.log("numpage:", window.numPages);
+      var pageShiftBegn = 1;
+      if (pageNum > 3) {
+        if (pageNum + 2 <= window.numPages) {
+          pageShiftBegn = pageNum - 2;
+        } else if (pageNum + 1 == window.numPages) {
+          pageShiftBegn = pageNum - 3;
+        } else if (pageNum == window.numPages) {
+          pageShiftBegn = pageNum - 4;
+          if (pageShiftBegn == 0) pageShiftBegn = 1;
+        }
+      }
+      var x = "";
+      for (var i = pageShiftBegn, j = 0;i <= window.numPages && j < 5;i++ , j++) {
+        var pp ="<input type='button' class='button is-primary' value='" +i +"' onclick = shiftsearchRes(" +i +")>";
+        x = x + pp + " ";
+      }
+      document.getElementById("pageLinksForSearch").innerHTML = x;
+      x = "";
+      var content = "";
+      content += "<table class='table'><thead><tr><th>Title</th><th>Text</th><th>Edit</th><th>Delete</th>\
+              </tr></thead><tbody>";
+      for (i = (pageNum - 1) * 4, j = 0;j < 4 && i < window.searchResult.length;i++ , j++) {
+        content += "<tr>";
+        content += "<td>" + window.searchResult[i].title+ "</td>"+      
+                   "<td>" + window.searchResult[i].note_text+ "</td>" +
+                   "<td>"+ "<button class='button is-primary' onclick=editNote(" +
+          window.searchResult[i].note_id + ",'" +window.searchResult[i].title + "','" +
+          window.searchResult[i].note_text +"')>Edit</button></td><td><button class= 'button is-danger' onclick=deleteNote(" +
+          window.searchResult[i].note_id + ")>Delete</button></td>";
+        content += "</tr>";
+      }
+      content += "</tbody></table>";
+      document.getElementById("searchRes").innerHTML = content;
+    }
+  </script>
+  <div id="deleteResult"></div>
+
+  <div id="noteEditor"></div>
+  <h4>Search your Notes:</h4>
+  <input type="text" name="searchTerm" id="searchTerm" />
+  <input type="button" value="Go" onclick="searchNotes()" />
+  <div id="searchRes"></div>
+  <div id="pageLinksForSearch"></div>
+</body>
+
 </html>
