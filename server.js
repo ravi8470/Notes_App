@@ -8,12 +8,19 @@ var mysql = require('mysql');
 var session = require('express-session');
 const bcrypt = require('bcrypt');
 //var ejs = require('ejs');
-var conn = mysql.createConnection({
-  host: "127.0.0.1",
-  user: "newuser",
-  password: "ravi",
-  database: "todo_app_db"
-});
+if (process.env.JAWSDB_URL == null || process.env.JAWSDB_URL == "") {
+  var conn = mysql.createConnection({
+    host: "127.0.0.1",
+    user: "newuser",
+    password: "ravi",
+    database: "todo_app_db",
+    port: 3306
+  });
+}
+else {
+  var conn = mysql.createConnection(process.env.JAWSDB_URL);
+}
+
 var app = express();
 var port = process.env.PORT;
 if (port == null || port == "") {
