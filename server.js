@@ -187,10 +187,10 @@ app.post("/updateNote", (reqp, resp) => {
     // updated note also gets retrieved.
     // selectRecentNotes(reqp,resp);
     if (res.changedRows == 1 || res.affectedRows == 1) {
-      resp.render('dashboard', { name: reqp.session.username, noteEdited: 55, success: 5 });
+      resp.render('dashboard', { name: reqp.session.username, success: 555 });
     }
     else {
-      resp.render('dashboard', { name: reqp.session.username, noteEdited: 66, success: 5 });
+      resp.render('dashboard', { name: reqp.session.username, success: 556 });
     }
 
   })
