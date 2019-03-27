@@ -15,7 +15,10 @@ var conn = mysql.createConnection({
   database: "todo_app_db"
 });
 var app = express();
-var port = 3000;
+var port = process.env.PORT;
+if (port == null || port == "") {
+  port = 3000;
+}
 app.use(bodyparser.json());
 app.use(bodyparser.urlencoded({
   extended: true
