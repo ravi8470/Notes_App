@@ -71,6 +71,9 @@
   <font color="red">Please login to save a note</font><% } %> <%if
         (success == 666){ %>
   <font color="red">Invalid Username/Password</font><% } %>
+  <%if (success == 111){ %>
+  <h2 style="color:green;">User registered Successfully. Please Login.</h2>
+  <% } %> <%if (success == 200){ %> user already exists <% } %>
   <section class="height-100 section">
     <h1 class="title has-text-centered">Notes App</h1>
     <div class="height-100 columns is-vcentered">
@@ -105,10 +108,6 @@
           </div>
         </div>
       </section>
-
-      <%if (success == 111){ %>
-      <h2>User registered Successfully.</h2>
-      <% } %> <%if (success == 200){ %> user already exists <% } %>
       <section class="is-4 is-success is-fullheight column is-vcentered">
         <div class="">
           <div class="has-text-centered">
