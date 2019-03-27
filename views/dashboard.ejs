@@ -22,6 +22,7 @@
   </form>
   <br>
   <hr>
+  <div id="deleteResult"></div>
   <%if (success == 288 || success == 555){ %>
   <div class="notification is-success is-4 column">
     <button class="delete"></button>
@@ -57,8 +58,6 @@
   <div id="notesArea"></div>
   <div id="pageNumLinks"></div>
   <hr>
-  
-  <div id="deleteResult"></div>
 
   <div id="noteEditor"></div>
   <label class="label is-medium">Search your notes:</label>
@@ -77,6 +76,7 @@
         });
       });
       function fetchAllNotes(offsetx) {
+        document.getElementById("notesArea").innerHTML = "";
         console.log("func called");
         var xhttp = new XMLHttpRequest();
         console.log("obj created");
@@ -125,7 +125,7 @@
                 json.payload[i].note_id + ")>Delete</button></td>";
               notesContent += "</tr>";
               }
-              notesContent += "</tbody></table>"
+              notesContent += "</tbody></table>";
               document.getElementById("notesArea").innerHTML = notesContent;
             }
             
@@ -166,9 +166,16 @@
         xhttp.onreadystatechange = function () {
           if (this.readyState == 4 && this.status == 200) {
             //console.log("resp for ajax call is ", this.response);
-            document.getElementById(
-              "deleteResult"
-            ).innerHTML = this.responseText;
+            if(this.responseText == 'success'){
+              document.getElementById('deleteResult').innerHTML = '<div class="notification is-success is-4 column">\
+                                                                  <button class="delete"></button>\
+                                                                    Note successfully Deleted.</div>';
+            }
+            else{
+              document.getElementById('deleteResult').innerHTML = '<div class="notification is-danger is-4 column">\
+                                                                  <button class="delete"></button>\
+                                                                    Error in deleting note.</div>';
+            }
             fetchAllNotes(1);
           }
         };

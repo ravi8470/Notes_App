@@ -217,10 +217,10 @@ app.get("/deleteNote", (req, res) => {
     res.set('statusCode', '200');
     res.set('Content-Type', 'text/html');
     if (resp.affectedRows == 1) {
-      res.send("<font color='green'>Note was deleted</font>");
+      res.send("success");
     }
     else {
-      res.send("<font color='red'>Error in deleting note.</font>");
+      res.send("failure");
     }
   })
 
