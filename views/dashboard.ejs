@@ -22,7 +22,14 @@
   </form>
   <br>
   <hr>
-  <div id="deleteResult"></div>
+  <div id="deleteResultSuccess" style="display: none" class="notification is-success is-4 column">
+      <button class="delete" onclick=deleteThis(this)></button>
+    Note successfully Deleted.
+  </div>
+  <div style="display: none" id="deleteResultFailure" class="notification is-danger is-4 column">
+      <button class="delete" onclick=deleteThis(this)></button>
+        Error in deleting note.
+  </div>
   <%if (success == 288 || success == 555){ %>
   <div class="notification is-success is-4 column">
     <button class="delete"></button>
@@ -67,14 +74,15 @@
   <div id="pageLinksForSearch"></div>
   <script>
       //an implementation example, which sets click handler for delete elements of all notifications on the page, in Vanilla Javascript. 
-      document.addEventListener('DOMContentLoaded', () => {
-        (document.querySelectorAll('.notification .delete') || []).forEach(($delete) => {
-          $notification = $delete.parentNode;
-          $delete.addEventListener('click', () => {
-            $notification.parentNode.removeChild($notification);
-          });
-        });
+    document.addEventListener('DOMContentLoaded', () => {
+    (document.querySelectorAll('.notification .delete') || []).forEach(($delete) => {
+      $notification = $delete.parentNode;
+      $delete.addEventListener('click', () => {
+        $notification.parentNode.removeChild($notification);
       });
+    });
+  });
+      
       function fetchAllNotes(offsetx) {
         document.getElementById("notesArea").innerHTML = "";
         console.log("func called");
@@ -167,14 +175,10 @@
           if (this.readyState == 4 && this.status == 200) {
             //console.log("resp for ajax call is ", this.response);
             if(this.responseText == 'success'){
-              document.getElementById('deleteResult').innerHTML = '<div class="notification is-success is-4 column">\
-                                                                  <button class="delete"></button>\
-                                                                    Note successfully Deleted.</div>';
+              document.getElementById('deleteResultSuccess').style.display = 'block';
             }
             else{
-              document.getElementById('deleteResult').innerHTML = '<div class="notification is-danger is-4 column">\
-                                                                  <button class="delete"></button>\
-                                                                    Error in deleting note.</div>';
+              document.getElementById('deleteResultFailure').style.display = 'block';
             }
             fetchAllNotes(1);
           }
@@ -229,6 +233,13 @@
         xhttp.send();
       }
   
+      function deleteThis(obj){
+        var p = obj.parentNode;
+        var q = p.parentNode;
+        console.log(q);
+        q.removeChild(p);
+      }
+
       function shiftsearchRes(pageNum) {
         console.log("shiftsearchres called");
         console.log("numpage:", window.numPages);
