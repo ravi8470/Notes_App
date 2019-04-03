@@ -32,6 +32,7 @@ app.use(bodyparser.urlencoded({
 }));
 app.set('view engine', 'ejs');
 app.use(session({ secret: "ravi", resave: false, saveUninitialized: false }));
+app.use(express.static('public'));
 conn.connect(function (err) {
   if (err) throw err;
 })
