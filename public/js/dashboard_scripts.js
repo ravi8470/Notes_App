@@ -183,8 +183,8 @@ function shiftsearchRes(pageNum) {
 
 function makeRows(title, text, id) {
     var x = "";
-    x += "<tr><td>" + title + "</td><td>" + text + "</td><td>" + "<button class='button is-primary' onclick=editNote(" +
-        id + ",'" + title + "','" + text + "')>Edit</button></td><td><button class= 'button is-danger' onclick=deleteNote(" +
+    x += "<tr><td>" + title + "</td><td>" + text + "</td><td>" + "<button class='button is-primary' onclick=\"editNote(" +
+        id + ",'" + title + "','" + text + "')\">Edit</button></td><td><button class= 'button is-danger' onclick=deleteNote(" +
         id + ")>Delete</button></td></tr>";
     return x;
 }
