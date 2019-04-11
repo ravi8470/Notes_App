@@ -5,8 +5,8 @@ const util = require('util');
 const { google } = require('googleapis');
 
 const gOauthConfig = {
-  clientId: '270634921066-24sihti7holha8uaaske26jvdlvm3f27.apps.googleusercontent.com',
-  clientSecret: 'Dtq0T97IHVYveb09vH4YqIW6',
+  clientId: process.env.GOOGLE_CLIENT_ID,
+  clientSecret: process.env.GOOGLE_CLIENT_SECRET,
   redirect: process.env.GOOGLE_REDIRECT || 'http://localhost:3000/handleOauth'
 };
 
