@@ -1,1 +1,4 @@
 /node_modules
+/utils/google-util.js
+/utils/testUtil.js
+/views/test.ejs

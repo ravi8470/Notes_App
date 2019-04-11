@@ -1,12 +1,100 @@
 //Success values --
 // 5 indicates dummy values to escape success is not defined errors.
+'use strict';
+const util = require('util');
+const { google } = require('googleapis');
+const gOauthConfig = {
+  clientId: '270634921066-24sihti7holha8uaaske26jvdlvm3f27.apps.googleusercontent.com',
+  clientSecret: 'Dtq0T97IHVYveb09vH4YqIW6',
+  redirect: 'http://localhost:3000/handleOauth'
+};
 
+function createConnection() {
+  return new google.auth.OAuth2(
+    gOauthConfig.clientId,
+    gOauthConfig.clientSecret,
+    gOauthConfig.redirect
+  );
+}
 
+const defaultScope = [
+  'https://www.googleapis.com/auth/plus.me',
+  'https://www.googleapis.com/auth/userinfo.email',
+];
+
+function getConnectionUrl(auth) {
+  return auth.generateAuthUrl({
+    access_type: 'offline',
+    prompt: 'consent', // access type and approval prompt will force a new refresh token to be made each time signs in
+    scope: defaultScope
+  });
+}
+
+function urlGoogle() {
+  const auth = createConnection(); // this is from previous step
+  const url = getConnectionUrl(auth);
+
+  return url;
+}
+function getGooglePlusApi(auth) {
+  return google.plus({ version: 'v1', auth });
+}
+const googleUrl = urlGoogle();
+async function getGoogleAccountFromCode(code, req, res) {
+  const auth = createConnection();
+  const data = await auth.getToken(code);
+  const tokens = data.tokens;
+
+  // add the tokens to the google api so we have access to the account
+
+  auth.setCredentials(tokens);
+
+  // connect to google plus - need this to get the user's email
+  const plus = getGooglePlusApi(auth);
+  const me = await plus.people.get({ userId: 'me' });
+
+  // get the google id and email
+  const userGoogleName = me.data.displayName;
+  let userGoogleEmail = me.data.emails && me.data.emails.length && me.data.emails[0].value;
+  // console.log(util.inspect(me.data, false, null, true /* enable colors */));
+  // console.log('usergoogleid' + userGoogleName);
+  // console.log('usergoogleemail' + userGoogleEmail);
+  userGoogleEmail = userGoogleEmail.slice(0, userGoogleEmail.length - 10);
+  if (req.session.ID && req.session.username) {
+    req.session.destroy(function (err) {
+      if (err) throw err;
+    });
+  }
+  var sql = "SELECT ID, username, password FROM logins WHERE username = '" + userGoogleEmail + "'";
+  conn.query(sql, function (err, resa) {
+    if (err) throw err;
+    if (resa.length == 1) {
+      console.log('found google user');
+      console.log(util.inspect(resa, false, null, true /* enable colors */));
+      req.session.ID = resa[0]['ID'];
+      req.session.username = resa[0]['username'];
+      res.render('dashboard', { name: userGoogleName, success: 5 });
+    }
+    else if (resa.length == 0) {
+      console.log('addin google user');
+      let hash = bcrypt.hashSync(userGoogleEmail, 10);
+      var sqlc = "INSERT INTO logins(username, password) VALUES ('" + userGoogleEmail + "','" + hash + "')";
+      conn.query(sqlc, function (err, rese) {
+        if (err) throw err;
+        req.session.ID = rese.insertId;
+        req.session.username = userGoogleEmail;
+        res.render('dashboard', { name: userGoogleName, success: 5 });
+      });
+    }
+
+  });
+}
 var express = require('express');
 const bodyparser = require("body-parser");
 var mysql = require('mysql');
 var session = require('express-session');
 const bcrypt = require('bcrypt');
+// var oauthModule = require('./utils/google-util.js');
 //var ejs = require('ejs');
 if (process.env.JAWSDB_URL == null || process.env.JAWSDB_URL == "") {
   var conn = mysql.createConnection({
@@ -35,7 +123,12 @@ app.use(session({ secret: "ravi", resave: false, saveUninitialized: false }));
 app.use(express.static('public'));
 conn.connect(function (err) {
   if (err) throw err;
-})
+});
+
+app.get('/handleOauth', (req, res) => {
+  var zz = getGoogleAccountFromCode(req.query.code, req, res);
+});
+
 app.post("/adduser", (req, resp) => {
   var numOfRecords;
   var user = req.body.uname;
@@ -52,16 +145,25 @@ app.post("/adduser", (req, resp) => {
         if (err) throw err;
         //numOfRecords = res.length;
         console.log("New User inserted ", user);
-        resp.render('index', { success: 111 });
+        console.log(util.inspect(res, false, null, true /* enable colors */))
+        resp.render('index', { success: 111, url: googleUrl });
       })
     }
     else {
-      resp.render('index', { success: 200 })
+      resp.render('index', { success: 200, url: googleUrl })
     }
 
   })
 });
 var numRec;
+
+
+
+
+
+
+
+
 app.post("/login", (reqp, resp) => {
   if (reqp.session.ID && reqp.session.username) {
     resp.render('dashboard', { name: reqp.session.username, success: 5 })
@@ -83,17 +185,17 @@ app.post("/login", (reqp, resp) => {
         if (bcrypt.compareSync(reqp.body.upass, res[0]['password'])) {
           //console.log("password comparison succeeded");
           reqp.session.ID = res[0]['ID'];
-          reqp.session.username = res[0]['username']
+          reqp.session.username = res[0]['username'];
           console.log("saving the ID session variable with value: ", reqp.session.ID);
           //selectRecentNotes(reqp, resp);
           resp.render('dashboard', { name: reqp.session.username, success: 5 });
         }
         else {
-          resp.render('index', { success: 666 });
+          resp.render('index', { success: 666, url: googleUrl });
         }
       }
       else {
-        resp.render('index', { success: 666 })
+        resp.render('index', { success: 666, url: googleUrl })
       }
     })
   }
@@ -103,12 +205,14 @@ app.get('/login', (req, res) => {
     res.render('dashboard', { name: req.session.username, success: 5 });
   }
   else {
-    res.render('index', { success: 0 });
+    res.render('index', { success: 0, url: googleUrl });
   }
 });
 
 //Saving Notes
 app.post("/saveNote", (reqp, resp) => {
+  console.log('insaveNote ');
+  console.log('session id is ' + reqp.session.ID);
   if (typeof reqp.session.ID != "undefined") {
     console.log(reqp.session.ID);
     var sql = "INSERT INTO notes(ID, title, created, note_text) VALUES (" +
@@ -121,7 +225,7 @@ app.post("/saveNote", (reqp, resp) => {
     })
   }
   else {
-    resp.render('index', { success: 299 })
+    resp.render('index', { success: 299, url: googleUrl })
   }
 });
 
@@ -155,7 +259,7 @@ app.get("/logout", (req, res) => {
   req.session.destroy(function (err) {
     if (err) throw err;
   });
-  res.render('index', { success: 0 });
+  res.render('index', { success: 0, url: googleUrl });
 });
 
 
@@ -182,7 +286,7 @@ app.post("/fetchNotes", (req, res) => {
     });
   }
   else {
-    res.render('index', { success: 0 });
+    res.render('index', { success: 0, url: googleUrl });
   }
 });
 
@@ -249,7 +353,7 @@ app.get("/", (req, res) => {
     res.render('dashboard', { name: req.session.username, success: 5 })
   }
   else {
-    res.render('index', { success: 0 });
+    res.render('index', { success: 0, url: googleUrl });
   }
 });
 app.use(function (req, res, next) {
